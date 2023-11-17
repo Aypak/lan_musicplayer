@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MP3 Player</title>
+</head>
+<body>
+  <audio id="audioPlayer" controls>
+    <source src="/audio" type="audio/mpeg">
+    Your browser does not support the audio tag.
+  </audio>
+
+  <script src="js/socket.js"></script>
+  <script>
+    console.log('Script in index.html is executed.');
+
+    const socket = io();
+
+    // Set initial state
+    let isPlaying = false;
+
+    const audio = document.getElementById('audioPlayer');
+
+    // Event listeners for play, pause, and seek
+    audio.addEventListener('play', () => {
+      console.log('Audio play event triggered.');
+      if (!isPlaying) {
+        socket.emit('play');
+        isPlaying = true;
+      }
+    });
+
+    audio.addEventListener('pause', () => {
+      console.log('Audio pause event triggered.');
+      if (isPlaying) {
+        socket.emit('pause');
+        isPlaying = false;
+      }
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      console.log('Audio timeupdate event triggered.');
+      socket.emit('seek', audio.currentTime);
+    });
+
+    // Socket event listeners
+    socket.on('play', () => {
+      console.log('Socket play event received.');
+      if (!isPlaying) {
+        audio.play();
+      }
+    });
+
+    socket.on('pause', () => {
+      console.log('Socket pause event received.');
+      if (isPlaying) {
+        audio.pause();
+      }
+    });
+
+    socket.on('seek', (time) => {
+      console.log('Socket seek event received. New time:', time);
+      audio.currentTime = time;
+    });
+
+    socket.on('initialState', (state) => {
+      console.log('Socket initialState event received. State:', state);
+      isPlaying = state.isPlaying;
+      if (isPlaying) {
+        audio.play();
+      }
+      audio.currentTime = state.currentTime;
+    });
+
+    socket.on('duration', (duration) => {
+      console.log('Socket duration event received. Duration:', duration);
+      audio.setAttribute('data-duration', duration);
+    });
+  </script>
+</body>
+</html>
